@@ -1,25 +1,25 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { City } from './city';
+import { MatTableDataSource } from '@angular/material/table';
+import { Country } from './country';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { ApiResult } from './apiResult';
-import { MatSort } from '@angular/material/sort';
+import { ApiResult } from '../cities/apiResult';
 
 @Component({
-  selector: 'app-cities',
-  templateUrl: './cities.component.html',
-  styleUrls: ['./cities.component.scss']
+  selector: 'app-countries',
+  templateUrl: './countries.component.html',
+  styleUrls: ['./countries.component.scss']
 })
-export class CitiesComponent implements OnInit {
-  private defaultPageSize: number = 10;
+export class CountriesComponent implements OnInit {
+private defaultPageSize: number = 10;
   private defaultPageIndex: number = 0;
   private defaultFilterColumn: string = "name";
   private filterQuery?: string;
 
-  public displayedColumns: string[] = ['id', 'name', 'lat', 'lon'];
-  public cities!: MatTableDataSource<City>;
+  public displayedColumns: string[] = ['id', 'name', 'iso2', 'iso3'];
+  public countries!: MatTableDataSource<Country>;
   public defaultSortColumn: string = "name";
   public defaultSortOrder: "asc" | "desc" = "asc";
   
@@ -41,7 +41,7 @@ export class CitiesComponent implements OnInit {
   }
 
   getData(event: PageEvent): void {
-    const url = environment.baseUrl + 'api/Cities';
+    const url = environment.baseUrl + 'api/Countries';
     let params = new HttpParams()
       .set("pageIndex", event.pageIndex.toString())
       .set("pageSize", event.pageSize.toString())
@@ -58,17 +58,15 @@ export class CitiesComponent implements OnInit {
   }
 
   sendGetRequest(url: string, params: HttpParams): void {
-    this.http.get<ApiResult<City>>(url, { params })
+    this.http.get<ApiResult<Country>>(url, { params })
     .subscribe({
       next: result => {
-        console.log(result);
         this.paginator.length = result.totalCount;
         this.paginator.pageIndex = result.pageIndex;
         this.paginator.pageSize = result.pageSize;
-        this.cities = new MatTableDataSource<City>(result.data);
+        this.countries = new MatTableDataSource<Country>(result.data);
       },
       error: error => console.error(error)
     });
   }
-
 }

@@ -19,9 +19,9 @@ namespace WorldCitiesAPI.Controllers
 
         // GET: api/Countries
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Country>>> GetCountries()
+        public async Task<ApiResult<Country>> GetCountries([FromQuery] PaginationQuery query)
         {
-            return await _context.Countries.ToListAsync();
+            return await ApiResult<Country>.CreateAsync(_context.Countries.AsNoTracking(), query);
         }
 
         // GET: api/Countries/5

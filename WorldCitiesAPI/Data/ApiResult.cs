@@ -11,18 +11,13 @@ namespace WorldCitiesAPI.Data
         private ApiResult(
             List<T> data,
             int count,
-            int pageIndex,
-            int pageSize,
-            string? sortColumn,
-            string? sortOrder)
+            PaginationQuery query)
         {
             Data = data;
-            PageIndex = pageIndex;
-            PageSize = pageSize;
+            PageIndex = query.PageIndex;
+            PageSize = query.PageSize;
             TotalCount = count;
-            TotalPages = (int)Math.Ceiling(count / (double)pageSize);
-            SortColumn = sortColumn;
-            SortOrder = sortOrder;
+            TotalPages = (int)Math.Ceiling(count / (double)query.PageSize);
         }
 
         /// <summary>
@@ -34,48 +29,47 @@ namespace WorldCitiesAPI.Data
         /// (0 = first page)</param>
         /// <param name="pageSize">The actual size of each 
         /// page</param>
-        /// <param name="sortColumn">The sorting column name</param>
-        /// <param name="sortOrder">The sorting order ("ASC" or 
-        /// "DESC")</param>
+        /// <param name="query">An object containing infomation about pagination</param>
         /// <returns>
         /// A object containing the IQueryable paged/sorted result 
         /// and all the relevant paging/sorting navigation info.
         /// </returns>
         public static async Task<ApiResult<T>> CreateAsync(
-            IQueryable<T> source,
-            int pageIndex,
-            int pageSize,
-            string? sortColumn = null,
-            string? sortOrder = null)
+            IQueryable<T> source, PaginationQuery query)
         {
-            var count = await source.CountAsync();
-            if (!string.IsNullOrEmpty(sortColumn)
-                && IsValidProperty(sortColumn))
+            if (!string.IsNullOrEmpty(query.FilterColumn) 
+                && !string.IsNullOrEmpty(query.FilterQuery)
+                && IsValidProperty(query.FilterColumn))
             {
-                sortOrder = !string.IsNullOrEmpty(sortOrder)
-                    && sortOrder.ToUpper() == "ASC"
+                source = source.Where(
+                    string.Format("{0}.StartsWith(@0)", query.FilterColumn),
+                    query.FilterQuery);
+            }
+            var count = await source.CountAsync();
+            if (!string.IsNullOrEmpty(query.SortColumn)
+                && IsValidProperty(query.SortColumn))
+            {
+                query.SortOrder = !string.IsNullOrEmpty(query.SortOrder)
+                    && query.SortOrder.ToUpper() == "ASC"
                     ? "ASC"
                     : "DESC";
                 source = source.OrderBy(
                     string.Format(
                         "{0} {1}",
-                        sortColumn,
-                        sortOrder)
+                        query.SortColumn,
+                        query.SortOrder)
                     );
             }
             source = source
-                .Skip(pageIndex * pageSize)
-                .Take(pageSize);
+                .Skip(query.PageIndex * query.PageSize)
+                .Take(query.PageSize);
 
             var data = await source.ToListAsync();
 
             return new ApiResult<T>(
                 data,
                 count,
-                pageIndex,
-                pageSize,
-                sortColumn,
-                sortOrder);
+                query);
         }
 
         /// <summary>
@@ -105,6 +99,11 @@ namespace WorldCitiesAPI.Data
         public List<T> Data { get; private set; }
 
         /// <summary>
+        /// Total items count
+        /// </summary>
+        public int TotalCount { get; private set; }
+
+        /// <summary>
         /// Zero-based index of current page.
         /// </summary>
         public int PageIndex { get; private set; }
@@ -113,12 +112,6 @@ namespace WorldCitiesAPI.Data
         /// Number of items contained in each page.
         /// </summary>
         public int PageSize { get; private set; }
-
-        /// <summary>
-        /// Total items count
-        /// </summary>
-        public int TotalCount { get; private set; }
-
 
         /// <summary>
         /// Total pages count
@@ -147,15 +140,5 @@ namespace WorldCitiesAPI.Data
                 return ((PageIndex + 1) < TotalPages);
             }
         }
-
-        /// <summary>
-        /// Sorting Column name (or null if none set)
-        /// </summary>
-        public string? SortColumn { get; set; }
-
-        /// <summary>
-        /// Sorting Order ("ASC", "DESC" or null if none set)
-        /// </summary>
-        public string? SortOrder { get; set; }
     }
 }

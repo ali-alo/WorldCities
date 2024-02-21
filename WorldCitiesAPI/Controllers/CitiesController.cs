@@ -19,12 +19,9 @@ namespace WorldCitiesAPI.Controllers
 
         // GET: api/Cities?pageIndex=0&pageSize=10&sortColumn=name&sortOrder=asc
         [HttpGet]
-        public async Task<ActionResult<ApiResult<City>>> GetCities(
-            int pageIndex = 0, int pageSize = 10,
-            string? sortColumn = null, string? sortOrder = null)
+        public async Task<ActionResult<ApiResult<City>>> GetCities([FromQuery] PaginationQuery query)
         {
-            return await ApiResult<City>.CreateAsync(_context.Cities.AsNoTracking(),
-                pageIndex, pageSize, sortColumn, sortOrder);
+            return await ApiResult<City>.CreateAsync(_context.Cities.AsNoTracking(), query);
         }
 
         // GET: api/Cities/5
